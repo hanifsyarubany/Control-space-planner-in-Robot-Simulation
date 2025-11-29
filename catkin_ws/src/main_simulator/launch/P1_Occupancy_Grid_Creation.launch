@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="world_name" default="$(find main_simulator)/worlds/obstacles_static.world" />
+
+  <!-- World/model search paths -->
+  <env name="GAZEBO_MODEL_PATH" value="$(find models)"/>
+
+  <!-- Start Gazebo with a specific world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="debug" value="0"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="world_name" value="$(arg world_name)"/> 
+    <arg name="paused" value="false"/>
+  </include>
+
+  <!-- Spawn the MAIN ROBOT -->
+  <include file="$(find nexus_4wd_mecanum_description)/launch/nexus_4wd_mecanum_description_depth-camera.launch" />
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+        args="-urdf -model nexus_4wd_mecanum -param robot_description -x 0.0 -y 0.0 -z 0.5" />
+
+  <!-- Generate local heightmap -->
+  <node pkg="local_costmap_generator" type="heightmap_node" name="heightmap_node" output="screen">
+    <param name="full_clouds" value="true" /> 
+  </node>
+
+  <!-- Generate local costmap -->
+  <node pkg="local_costmap_generator" type="heightmap_costmap_node" name="heightmap_costmap_node" output="screen">
+  </node>
+
+  <!-- Generate Global Occupancy Grid -->
+  <node pkg="global_occupancy_grid_mapper" type="occupancy_grid_mapper_node.py" name="occupancy_grid_mapper" output="screen">
+    <!-- Main parameters -->
+    <param name="fixed_frame" value="odom"/>
+    <param name="obstacles_topic" value="/points/velodyne_obstacles"/>
+    <param name="grid_topic" value="/persistent_map/occupancy"/>
+    <!-- Map geometry -->
+    <param name="resolution" value="0.1"/>
+    <param name="xmin" value="-20.0"/>
+    <param name="xmax" value="20.0"/>
+    <param name="ymin" value="-20.0"/>
+    <param name="ymax" value="20.0"/>
+    <!-- Sensor/model options -->
+    <param name="voxel_leaf" value="0.10"/>    
+    <param name="do_raytrace" value="true"/>
+    <param name="max_range" value="0.0"/>       
+    <!-- Log-odds parameters -->
+    <param name="l_occ" value="0.85"/>
+    <param name="l_free" value="-0.40"/>
+    <param name="l_min" value="-2.0"/>
+    <param name="l_max" value=" 3.5"/>
+    <param name="p_occ_pub_thresh" value="0.65"/>
+    <param name="p_free_pub_thresh" value="0.20"/>
+    <param name="initialize_unknown" value="true"/>
+    <param name="inflation_radius" value="0.2"/>
+  </node>
+
+  <!-- RVIZ visualization -->
+  <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find rviz_visualization)/config_p1.rviz"/>
+  
+  <!-- Teleoperation -->
+  <node pkg="teleop_twist_keyboard"
+        type="teleop_twist_keyboard.py"
+        name="teleop_twist_keyboard"
+        output="screen"/>
+</launch>

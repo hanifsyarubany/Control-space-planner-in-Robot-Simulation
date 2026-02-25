@@ -54,18 +54,3 @@ Through this experiment, I used the same planner as the previous problem.
 
 [![P4 Simulation Thumbnail](figures/p4_thumbnail.png)](https://www.youtube.com/watch?v=N5T02Y5fnzQ&t=181s)
 *(Click the image to watch the P4 Simulation on YouTube)*
-
----
-
-## ⚙️ Planner Design Details
-
-### 1. Motion Primitives Architecture
-![Motion Primitives RQT Graph](figures/motion_primitives_rqt_graph.jpg)
-
-In motion primitive based planner, the control space planner node is using local map obstacle derived from the depth camera cost map. It can publish `/points/selected_motion` and `cmd_vel` to directly control the robot movement in reaching the navigation goal. 
-
-The key methodology to derive motion primitives based planner is cost term calculation. Below is the total cost calculation:
-$cost\_total=W\_GOAL \cdot J\_goal+W\_HEAD \cdot J\_head+W\_STEER \cdot J\_st+W\_TRAV \cdot J\_trav-W\_PROG \cdot progress\_\pi$
-
-In addition to that cost, there is a reward term if the robot takes an early turning due to a sudden potential collision:
-$cost\_total - W\_EARLY\_TURN \cdot J\_early\_turn$
